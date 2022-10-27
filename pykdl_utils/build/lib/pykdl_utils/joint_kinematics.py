@@ -42,8 +42,8 @@ def create_joint_kin(base_link, end_link, urdf_filename=None, timeout=1., wait=F
     if urdf_filename is None:
         robot = URDF.from_parameter_server(key=description_param)
     else:
-        f = open(urdf_filename, 'r')
-        robot = URDF.from_xml_string(f.read())
+        f = file(urdf_filename, 'r')
+        robot = Robot.from_xml_string(f.read())
         f.close()
     if not wait:
         return JointKinematics(robot, base_link, end_link, timeout=timeout)
@@ -214,7 +214,7 @@ class JointKinematicsWait(JointKinematicsBase):
     def get_joint_state(self, timeout=1.0):
         try:
             js = rospy.wait_for_message('/joint_states', JointState, timeout)
-        except rospy.ROSException as e:
+        except ROSException as e:
             rospy.logwarn('get_joint_state timed out after %1.1f s' % timeout)
             return None, None
         joint_names_list = self.get_joint_names()
@@ -241,7 +241,7 @@ class JointKinematicsWait(JointKinematicsBase):
 
     ##
     # Returns the current joint velocities
-    def get_joint_velocities(self, timeout=1.0, wrapped=False):
+    def get_joint_velocities(self, timeout=1.0):
         js, js_inds = self.get_joint_state()
         if js is None:
             rospy.logwarn("[joint_state_kdl_kin] Joint states haven't been filled yet.")
@@ -257,7 +257,7 @@ class JointKinematicsWait(JointKinematicsBase):
 
     ##
     # Returns the current joint efforts
-    def get_joint_efforts(self, timeout=1.0, wrapped=False):
+    def get_joint_efforts(self, timeout=1.0):
         js, js_inds = self.get_joint_state()
         if js is None:
             rospy.logwarn("[joint_state_kdl_kin] Joint states haven't been filled yet.")
@@ -289,24 +289,24 @@ def main():
     if (len(sys.argv) == 1):
         robot = URDF.from_parameter_server()
     else:
-        f = open(sys.argv[1], 'r')
-        robot = URDF.from_xml_string(f.read())
+        f = file(sys.argv[1], 'r')
+        robot = Robot.from_xml_string(f.read())
         f.close()
 
     if True:
         import random
         base_link = robot.get_root()
         end_link = robot.link_map.keys()[random.randint(0, len(robot.link_map)-1)]
-        print("Root link: %s; Random end link: %s" % (base_link, end_link))
+        print "Root link: %s; Random end link: %s" % (base_link, end_link)
         js_kin = JointKinematics(robot, base_link, end_link)
-        print("Joint angles:", js_kin.get_joint_angles())
-        print("Joint angles (wrapped):", js_kin.get_joint_angles(True))
-        print("Joint velocities:", js_kin.get_joint_velocities())
-        print("Joint efforts:", js_kin.get_joint_efforts())
-        print("Jacobian:", js_kin.jacobian())
+        print "Joint angles:", js_kin.get_joint_angles()
+        print "Joint angles (wrapped):", js_kin.get_joint_angles(True)
+        print "Joint velocities:", js_kin.get_joint_velocities()
+        print "Joint efforts:", js_kin.get_joint_efforts()
+        print "Jacobian:", js_kin.jacobian()
         kdl_pose = js_kin.forward()
-        print("FK:", kdl_pose)
-        print( "End effector force:", js_kin.end_effector_force())
+        print "FK:", kdl_pose
+        print "End effector force:", js_kin.end_effector_force()
 
         if True:
             import tf
@@ -315,7 +315,7 @@ def main():
             rospy.sleep(1)
             t = tf_list.getLatestCommonTime(base_link, end_link)
             tf_pose = PoseConv.to_homo_mat(tf_list.lookupTransform(base_link, end_link, t))
-            print("Error with TF:", np.linalg.norm(kdl_pose - tf_pose))
+            print "Error with TF:", np.linalg.norm(kdl_pose - tf_pose)
 
 if __name__ == "__main__":
     main()
